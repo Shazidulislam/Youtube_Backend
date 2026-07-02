@@ -1,15 +1,18 @@
 {
-  "name": "backend", 
+  "name": "backend",
   "version": "1.0.0",
   "description": "Its a backend for the youtube application for backend practice",
   "main": "src/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js"
-
   },
   "keywords": [],
   "author": "Youtube Backend",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
 }
