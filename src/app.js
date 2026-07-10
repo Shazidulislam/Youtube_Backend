@@ -19,4 +19,18 @@ app.use(express.static("public")) //image or pdf asset emon kono file thabo
 app.use(cookieParser()) // use case for store cookie from client as objectF
 
 
+
+// routes import
+import userRouter from "./routes/user.routes.js"; 
+
+
+// routes declaration 
+app.use("/api/v1/users", userRouter);
+
+// http://localhost:4000/api/v1/users/register
+
+
+
+
+
 export default app;
