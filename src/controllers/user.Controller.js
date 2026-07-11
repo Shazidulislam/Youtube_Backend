@@ -28,7 +28,7 @@ const registerUser = asynHandler(async (req, res) => {
 
   //   check this user allready register or not
   //   const existendUser = User.findOne({email})
-  const existendUser = User.findOne({
+  const existendUser = await User.findOne({
     $or: [{ username }, { email }],
   });
   // if the register is all ready exists throw error
@@ -38,16 +38,17 @@ const registerUser = asynHandler(async (req, res) => {
 
   //    check for file(images , and avatar) is  arrive or not
 
-  let avatarLocalFile = req.files?.avatar[0]?.path;
-  let coverImageFile = req.files?.coverImage[0]?.path;
+  const avatarLocalFile = req.files?.avatar[0]?.path;
+  const coverImageFile = req.files?.coverImage[0]?.path;
 
   if (!avatarLocalFile) throw new ApiError(400, "Avatar file  is required");
 
   //   file upload on Cloudinary
 
-  let avatar = await uploadOnCloudinary(avatarLocalFile);
-  let coverImage = await uploadOnCloudinary(coverImageFile);
+  const avatar = await uploadOnCloudinary(avatarLocalFile);
+  const coverImage = await uploadOnCloudinary(coverImageFile);
 
+  if (!coverImage) throw new ApiError(400, "coverImage file  is required");
   if (!avatar) throw new ApiError(400, "Avatar file  is required");
 
   let user = await User.create({
