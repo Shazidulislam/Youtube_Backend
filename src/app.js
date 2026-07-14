@@ -12,8 +12,8 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json({ limit: "16kb" })); // json data
-app.use(urlencoded({ extended: true, limit: "16kb" })); //
+app.use(express.json({ limit: "25kb" })); // json data
+app.use(urlencoded({ extended: true, limit: "25kb" })); //
 app.use(express.static("public")) //image or pdf asset emon kono file thabo
 
 app.use(cookieParser()) // use case for store cookie from client as objectF

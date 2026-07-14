@@ -1,5 +1,5 @@
 
-
+// this a Higher-Order-Function(HOF)
 const asynHandler = (requestHandler) => {
   return (req, res, next) => {
     Promise.resolve(requestHandler(req, res, next)).catch((error) => {
