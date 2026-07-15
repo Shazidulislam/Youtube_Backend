@@ -3,6 +3,7 @@ import ApiError from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import uploadOnCloudinary from "../utils/Cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
 
 const genarateAccessTokenAndRefreshToken = async (userId) => {
   try {
@@ -118,9 +119,8 @@ const loginUser = asynHandler(async (req, res) => {
   //   throw new ApiError(400, "Username or email is required");
   // }
 
-  if(!(username || email)){
+  if (!(username || email)) {
     throw new ApiError(400, "Username or email is required");
-
   }
 
   if (!password) {
@@ -193,4 +193,53 @@ const logoutUser = asynHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User logged Out"));
 });
 
-export { registerUser, loginUser, logoutUser };
+const refreshAccessToken = asynHandler(async (req, res) => {
+  try {
+    const incomingRefreshToken =
+      req.cookies.refreshToken || req.body.refreshToken;
+    if (!incomingRefreshToken) {
+      throw new ApiError(401, "Unauthorized request");
+    }
+
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh token");
+    }
+
+    if (incomingRefreshToken !== user?.refreshToken) {
+      throw new ApiError(401, "Invalid refresh token");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, refreshToken } = await genarateAccessTokenAndRefreshToken(decodedToken?._id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            accessToken,
+            refreshToken,
+          },
+          "Access token refrehed",
+        ),
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid token");
+  }
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken };
