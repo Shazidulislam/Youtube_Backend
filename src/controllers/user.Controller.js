@@ -221,7 +221,8 @@ const refreshAccessToken = asynHandler(async (req, res) => {
       secure: true,
     };
 
-    const { accessToken, refreshToken } = await genarateAccessTokenAndRefreshToken(decodedToken?._id);
+    const { accessToken, refreshToken } =
+      await genarateAccessTokenAndRefreshToken(decodedToken?._id);
 
     return res
       .status(200)
@@ -242,4 +243,41 @@ const refreshAccessToken = asynHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const changeCurrentPassword = asynHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    throw new ApiError(404, "error");
+  }
+
+  const user = await User.findById(req.user?._id);
+  if (!user) {
+    throw new ApiError(404, "User not found!");
+  }
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "Invalid old password");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password change successfully."));
+});
+
+const getCurrentUser = asynHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Current user get successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser
+};
