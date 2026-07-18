@@ -16,11 +16,12 @@ console.log(
 const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
-    console.log(localFilePath, "from cloudnarry");
+    // console.log(localFilePath, "from cloudnarry");
     // Upload the file on cloudinary
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
+
     if (fs.existsSync(localFilePath)) {
       fs.unlinkSync(localFilePath);
     }
@@ -29,7 +30,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     return response;
   } catch (error) {
     // console.error("Cloudinary file Upload Error:", error);
-    if (error) throw new Error();
+    throw new Error("Cloudinary file Upload Error:", error);
     if (localFilePath && fs.existsSync(localFilePath)) {
       fs.unlinkSync(localFilePath); // remmove the file from local storage if upload fails
     }
@@ -37,5 +38,13 @@ const uploadOnCloudinary = async (localFilePath) => {
     return null;
   }
 };
+
+// const deleteFromCloudinary = async (oldImage) => {
+//   try {
+//     if (!oldImage) {
+//       return 
+//     }
+//   } catch (error) {}
+// };
 
 export default uploadOnCloudinary;
