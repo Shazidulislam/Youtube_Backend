@@ -244,6 +244,7 @@ const refreshAccessToken = asynHandler(async (req, res) => {
 });
 // day -17
 const changeCurrentPassword = asynHandler(async (req, res) => {
+  // USE verifyJwt
   const { oldPassword, newPassword } = req.body;
 
   if (!oldPassword || !newPassword) {
@@ -268,12 +269,14 @@ const changeCurrentPassword = asynHandler(async (req, res) => {
 });
 
 const getCurrentUser = asynHandler(async (req, res) => {
+  // USE verifyJwt
   return res
     .status(200)
     .json(new ApiResponse(200, req.user, "Current user get successfully"));
 });
 // update user account details
 const accountsDetailsUpdate = asynHandler(async (req, res) => {
+  // USE verifyJwt
   const { fullName, email } = req.body;
   if (!fullName || !email) {
     throw new ApiError(400, "Full name and email is required!");
@@ -308,12 +311,13 @@ const accountsDetailsUpdate = asynHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asynHandler(async (req, res) => {
+  // USE verifyJwt
   const avatarLocalFile = req.file?.path;
   if (!avatarLocalFile) {
     throw new ApiError(400, "Avatar file is missing!");
   }
 
-  // TODO delete old image 
+  // TODO delete old image
 
   const avatar = await uploadOnCloudinary(avatarLocalFile);
 
@@ -337,6 +341,7 @@ const updateUserAvatar = asynHandler(async (req, res) => {
 });
 
 const updateUserCoverImage = asynHandler(async (req, res) => {
+  //USE verifyJwt
   const coverLocalFile = req.file?.path;
 
   if (!coverLocalFile) {
@@ -362,6 +367,31 @@ const updateUserCoverImage = asynHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Update coverimage successfully"));
+});
+
+const poreKhujenibo = asynHandler(async (req, res) => {
+  // finding total  subscribire
+
+  const { username } = req.user;
+  if (!username) {
+    throw new ApiError(400, "Username not found");
+  }
+
+  const channal = await User.aggregate([
+    {
+      $match: {
+        username: username?.trim(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscription",
+        localField: "author_id",
+        foreignField: "_id",
+        as: "author_Details",
+      },
+    },
+  ]);
 });
 
 export {
