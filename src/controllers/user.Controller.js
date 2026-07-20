@@ -369,7 +369,7 @@ const updateUserCoverImage = asynHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Update coverimage successfully"));
 });
 
-const poreKhujenibo = asynHandler(async (req, res) => {
+const nameporeKhujenibo = asynHandler(async (req, res) => {
   // finding total  subscribire
 
   const { username } = req.user;
@@ -385,13 +385,60 @@ const poreKhujenibo = asynHandler(async (req, res) => {
     },
     {
       $lookup: {
-        from: "subscription",
-        localField: "author_id",
-        foreignField: "_id",
-        as: "author_Details",
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscriberCount: {
+          $size: "$subscribers",
+        },
+        chennelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubsCribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscriberCount: 1,
+        chennelsSubscribedToCount: 1,
+        isSubsCribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
       },
     },
   ]);
+
+  if (!channal?.length) {
+    throw new ApiError("Channal does not exists!");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channal[0], "User channal fetched successfully!"),
+    );
 });
 
 export {
