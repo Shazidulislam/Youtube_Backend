@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import uploadOnCloudinary from "../utils/Cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const genarateAccessTokenAndRefreshToken = async (userId) => {
   try {
@@ -369,7 +370,7 @@ const updateUserCoverImage = asynHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Update coverimage successfully"));
 });
 
-const nameporeKhujenibo = asynHandler(async (req, res) => {
+const getUserChannelProfile = asynHandler(async (req, res) => {
   // finding total  subscribire
 
   const { username } = req.user;
@@ -441,6 +442,61 @@ const nameporeKhujenibo = asynHandler(async (req, res) => {
     );
 });
 
+const getWatchHistory = asynHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          // array theke object e nia jai
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch History fetched successfully",
+      ),
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -451,4 +507,6 @@ export {
   accountsDetailsUpdate,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory
 };
