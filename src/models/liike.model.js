@@ -16,10 +16,10 @@ const likesSchema = new mongoose.Schema(
     },
     tweet: {
       type: Schema.Types.ObjectId,
-      ref: "Tweets",
+      ref: "Tweet",
     },
   },
   { timestamps: true },
 );
 
-export const Likes = mongoose.model("Likes", likesSchema);
+export const Like = mongoose.model("Like", likesSchema);

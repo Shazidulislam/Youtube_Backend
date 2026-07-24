@@ -18,4 +18,4 @@ const tweetsSchema = new mongoose.Schema(
   },
 );
 
-export const Tweets = mongoose.model("Tweets", tweetsSchema);
+export const Tweet = mongoose.model("Tweet", tweetsSchema);

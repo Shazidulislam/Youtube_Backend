@@ -278,7 +278,7 @@ const getCurrentUser = asynHandler(async (req, res) => {
 // update user account details
 const accountsDetailsUpdate = asynHandler(async (req, res) => {
   // USE verifyJwt
-  const { fullName, email } = req.body;
+  const { fullName, email } = req.body; 
   if (!fullName || !email) {
     throw new ApiError(400, "Full name and email is required!");
   }
@@ -498,7 +498,7 @@ const getWatchHistory = asynHandler(async (req, res) => {
 });
 
 export {
-  registerUser,
+  registerUser,  
   loginUser,
   logoutUser,
   refreshAccessToken,
@@ -510,3 +510,17 @@ export {
   getUserChannelProfile,
   getWatchHistory
 };
+
+/*
+  registerUser,  // success
+  loginUser,   // success
+  logoutUser,   
+  refreshAccessToken,   // success
+  changeCurrentPassword, //success 
+  getCurrentUser,  // success
+  accountsDetailsUpdate, //success
+  updateUserAvatar, // success
+  updateUserCoverImage,  //success
+  getUserChannelProfile,  //success
+  getWatchHistory //success
+*/ 
