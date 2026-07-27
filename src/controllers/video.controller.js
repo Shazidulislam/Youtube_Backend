@@ -2,6 +2,7 @@ import { Video } from "../models/video.model";
 import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
 import asynHandler from "../utils/asyncHandeler";
+import uploadOnCloudinary from "../utils/Cloudinary";
 
 const getAllVideo = asynHandler(async (req, res) => {
   //TODO: get all videos based on query, sort, pagination
@@ -29,7 +30,7 @@ const publishAVideo = asynHandler(async (req, res) => {
   //and upload on uploadOnCloudinary
 
   const videofile = await uploadOnCloudinary(videoFileLocalPath);
-  const tumbuilefile = await videoFileLocalPath(thumbuileFileLocalPath);
+  const tumbuilefile = await uploadOnCloudinary(thumbuileFileLocalPath);
 
   console.log(videofile);
 
@@ -49,6 +50,7 @@ const publishAVideo = asynHandler(async (req, res) => {
   }
 
   // create entry on Mongodb
+
   // reamber  on route use veryfyJwt for found owner
   const video = await Video.create({
     title,
@@ -61,7 +63,7 @@ const publishAVideo = asynHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiError(200, video, "Video uploaded successfully."));
+    .json(new ApiResponse(201, video, "Video uploaded successfully."));
 });
 
 // get video by id
@@ -77,7 +79,7 @@ const getVideoById = asynHandler(async (req, res) => {
   //get video from database
   const video = await Video.findById(videoId);
 
-  if (video) {
+  if (!video) {
     throw new ApiError(404, "Video not found");
   }
 
@@ -86,14 +88,20 @@ const getVideoById = asynHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "video fetched successfully"));
 });
 
-// updated a video
+// updated a video  //ok
 const updateVideo = asynHandler(async (req, res) => {
-  const { videoId } = req.params;
   // TODO UPDATE VIDEO DEATILS like , title , description , thumbuile
   // take like , title , description for req.body
   // take thumbuile for req.file?.path   and use upload.single in routes
+  // and check the owner
+  const { videoId } = req.params;
 
-  const { title, description, thumbnail } = req.body;
+  const { title, description } = req.body;
+  const thumbnailLocalFile = req?.file?.path;
+
+  if (!videoId) {
+    throw new ApiError(400, "Video id is required");
+  }
 
   if (!title) {
     throw new ApiError(400, "Title is required.");
@@ -102,7 +110,22 @@ const updateVideo = asynHandler(async (req, res) => {
   if (!description) {
     throw new ApiError(400, "Description is required.");
   }
-  const { thumbnail } = req?.file?.path;
+
+  if (!thumbnailLocalFile) {
+    throw new ApiError(403, "Thumbnail file is required");
+  }
+
+  const existstenceVideo = await Video.findById(videoId);
+
+  if (!existstenceVideo) {
+    throw new ApiError(404, "Video not found.");
+  }
+
+  if (existstenceVideo?.owner?.toString() !== req.user?._id?.toString()) {
+    throw new ApiError(403, "You are not authorize to update this video.");
+  }
+
+  const thumbnail = await uploadOnCloudinary(thumbnailLocalFile);
 
   if (!thumbnail?.url) {
     throw new ApiError(400, "Thumbnail is required.");
@@ -112,6 +135,8 @@ const updateVideo = asynHandler(async (req, res) => {
     videoId,
     {
       $set: {
+        title,
+        description,
         thumbnail: thumbnail.url,
       },
     },
@@ -123,11 +148,8 @@ const updateVideo = asynHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video updated successfully."));
 });
 
-
-
-
 // delete a video
-const deletetVideo = asynHandler(async (req, res) => {
+const deletedVideo = asynHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: delete video
 
