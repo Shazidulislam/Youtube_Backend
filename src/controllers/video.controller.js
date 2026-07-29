@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import { Video } from "../models/video.model";
-import ApiError from "../utils/ApiError";
-import ApiResponse from "../utils/ApiResponse";
-import asynHandler from "../utils/asyncHandeler";
-import uploadOnCloudinary from "../utils/Cloudinary";
+import { Video } from "../models/video.model.js";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
+import asynHandler from "../utils/asyncHandeler.js";
+import uploadOnCloudinary from "../utils/Cloudinary.js";
 
 const getAllVideo = asynHandler(async (req, res) => {
   let {

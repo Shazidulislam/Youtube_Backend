@@ -1,13 +1,13 @@
 import { Router } from "express";
-import { verifyJwt } from "../middlewares/auth.middleware";
-import { upload } from "../middlewares/multer.middlewares";
+import { verifyJwt } from "../middlewares/auth.middleware.js";
+import { upload } from "../middlewares/multer.middlewares.js";
 import {
   deletedVideo,
   getAllVideo,
   getVideoById,
   publishAVideo,
   updateVideo,
-} from "../controllers/video.controller";
+} from "../controllers/video.controller.js";
 
 const videoRouter = Router();
 videoRouter.use(verifyJwt); // // Apply verifyJWT middleware to all routes in this file
