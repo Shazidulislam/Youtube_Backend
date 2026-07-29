@@ -28,107 +28,96 @@ const getAllVideo = asynHandler(async (req, res) => {
     sortBy = "createdAt";
   }
 
-    // Match Stage তৈরি করা
+  // Match Stage তৈরি করা
   // শুরুতে শুধুমাত্র Published ভিডিওগুলো আনা হবে
-  const matchStage ={
-    isPublished : true,
-  }
+  const matchStage = {
+    isPublished: true,
+  };
 
-  if(query){
+  if (query) {
     matchStage.title = {
       $regex: query, // ক্লায়েন্ট যে keyword পাঠাবে (যেমন: "node") , puro title node lekha thakle regex oi video nia asbe
-      $options:"i"  // solve lower case and uppercase problrm , all title convert in lower case
-
+      $options: "i", // solve lower case and uppercase problrm , all title convert in lower case
+    };
+  }
+  // যদি userId দেওয়া হয় তাহলে সেই User-এর ভিডিও Filter হবে
+  if (userId) {
+    // ObjectId Valid কিনা Check করা
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new ApiError(400, "Invalied user id");
     }
 
-  }
- // যদি userId দেওয়া হয় তাহলে সেই User-এর ভিডিও Filter হবে
-  if(userId){
-
-      // ObjectId Valid কিনা Check করা
-      if(!mongoose.Types.ObjectId.isValid(userId)){
-        throw new ApiError(400 ,"Invalied user id" )
-      }
-
-      // Owner onojai filter kora, 
-      matchStage.owner = new  mongoose.Types.ObjectId(userId);
-
-      
+    // Owner onojai filter kora,
+    matchStage.owner = new mongoose.Types.ObjectId(userId);
   }
 
   // Aggregation pupline start
-  const aggregate= Video.aggregate([
-        // প্রথমে Filter করা হবে
+  const aggregate = Video.aggregate([
+    // প্রথমে Filter করা হবে
 
     {
-      $match:matchStage,
+      $match: matchStage,
     },
     {
-      $lookup:{
-        from:"users",
-        localField:"owner", // Video collection er owner field
-        foreignField:"_id",
-      
-        pipeline:[
+      $lookup: {
+        from: "users",
+        localField: "owner", // Video collection er owner field
+        foreignField: "_id",
+
+        pipeline: [
           {
-            $project:{
-              fullName:1,
-              username:1,
-              avatar:1,
-            }
-          }
+            $project: {
+              fullName: 1,
+              username: 1,
+              avatar: 1,
+            },
+          },
         ],
-          as:"videoOwner", // Owner Data return hobe
-      }
+        as: "videoOwner", // Owner Data return hobe
+      },
     },
     {
-      $addFields:{
-        videoOwner:{
-          $first:"$videoOwner"
+      $addFields: {
+        videoOwner: {
+          $first: "$videoOwner",
         },
       },
     },
-        // Dynamic Sorting
+    // Dynamic Sorting
     {
-      $sort:{
-        [sortBy]:sortType === "asc" ? 1 :-1
+      $sort: {
+        [sortBy]: sortType === "asc" ? 1 : -1,
       },
     },
 
     // client ke je sokol field dekhabo
     {
-      $project:{
-        videoFile:1,
+      $project: {
+        videoFile: 1,
         thumbnail: 1,
         title: 1,
-        description:1,
-        duration:1,
-        views:1,
-        isPublished:1,
-        owner:"$videoOwner"
-      }
-    }
-  ])
+        description: 1,
+        duration: 1,
+        views: 1,
+        isPublished: 1,
+        owner: "$videoOwner",
+      },
+    },
+  ]);
 
   //paginate option
   const options = {
     page,
     limit,
-  }
+  };
 
-   // Aggregate Pagination Plugin ব্যবহার করে Data Fetch করা
-   const videos = await Video.aggregatePaginate(aggregate , options);
+  // Aggregate Pagination Plugin ব্যবহার করে Data Fetch করা
+  const videos = await Video.aggregatePaginate(aggregate, options);
 
   //  response
   return res
-  .status(200)
-  .json(new ApiResponse(
-    200,
-    videos,
-    "Videos fetched successfully"
-  ))
-
-
+    .status(200)
+    .json(new ApiResponse(200, videos, "Videos fetched successfully"));
 });
 
 // upload a video
