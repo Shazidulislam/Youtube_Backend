@@ -375,7 +375,7 @@ const getUserChannelProfile = asynHandler(async (req, res) => {
 
   const { username } = req.user;
   if (!username) {
-    throw new ApiError(400, "Username not found");
+    throw new ApiError(400, "Username not required.");
   }
 
   const channal = await User.aggregate([

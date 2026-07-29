@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Video } from "../models/video.model";
 import ApiError from "../utils/ApiError";
 import ApiResponse from "../utils/ApiResponse";
@@ -5,7 +6,129 @@ import asynHandler from "../utils/asyncHandeler";
 import uploadOnCloudinary from "../utils/Cloudinary";
 
 const getAllVideo = asynHandler(async (req, res) => {
+  let {
+    page = 1, // kon page video dekhabe
+    limit = 10, // video limit per page
+    query, // search key word
+    sortBy = "createdAt", //kon filed onojai sort hobe
+    sortType = "desc", //asc othoba desc
+    userId, // নির্দিষ্ট User-এর ভিডিও আনতে
+  } = req.query;
   //TODO: get all videos based on query, sort, pagination
+
+  // convert string to number
+  page = Number(page);
+
+  limit = Number(limit);
+
+  // যেসব Field অনুযায়ী Sort করা যাবে
+  const allowedSortFields = ["createdAt", "views", "title", "duration"];
+
+  if (!allowedSortFields.includes(sortBy)) {
+    sortBy = "createdAt";
+  }
+
+    // Match Stage তৈরি করা
+  // শুরুতে শুধুমাত্র Published ভিডিওগুলো আনা হবে
+  const matchStage ={
+    isPublished : true,
+  }
+
+  if(query){
+    matchStage.title = {
+      $regex: query, // ক্লায়েন্ট যে keyword পাঠাবে (যেমন: "node") , puro title node lekha thakle regex oi video nia asbe
+      $options:"i"  // solve lower case and uppercase problrm , all title convert in lower case
+
+    }
+
+  }
+ // যদি userId দেওয়া হয় তাহলে সেই User-এর ভিডিও Filter হবে
+  if(userId){
+
+      // ObjectId Valid কিনা Check করা
+      if(!mongoose.Types.ObjectId.isValid(userId)){
+        throw new ApiError(400 ,"Invalied user id" )
+      }
+
+      // Owner onojai filter kora, 
+      matchStage.owner = new  mongoose.Types.ObjectId(userId);
+
+      
+  }
+
+  // Aggregation pupline start
+  const aggregate= Video.aggregate([
+        // প্রথমে Filter করা হবে
+
+    {
+      $match:matchStage,
+    },
+    {
+      $lookup:{
+        from:"users",
+        localField:"owner", // Video collection er owner field
+        foreignField:"_id",
+      
+        pipeline:[
+          {
+            $project:{
+              fullName:1,
+              username:1,
+              avatar:1,
+            }
+          }
+        ],
+          as:"videoOwner", // Owner Data return hobe
+      }
+    },
+    {
+      $addFields:{
+        videoOwner:{
+          $first:"$videoOwner"
+        },
+      },
+    },
+        // Dynamic Sorting
+    {
+      $sort:{
+        [sortBy]:sortType === "asc" ? 1 :-1
+      },
+    },
+
+    // client ke je sokol field dekhabo
+    {
+      $project:{
+        videoFile:1,
+        thumbnail: 1,
+        title: 1,
+        description:1,
+        duration:1,
+        views:1,
+        isPublished:1,
+        owner:"$videoOwner"
+      }
+    }
+  ])
+
+  //paginate option
+  const options = {
+    page,
+    limit,
+  }
+
+   // Aggregate Pagination Plugin ব্যবহার করে Data Fetch করা
+   const videos = await Video.aggregatePaginate(aggregate , options);
+
+  //  response
+  return res
+  .status(200)
+  .json(new ApiResponse(
+    200,
+    videos,
+    "Videos fetched successfully"
+  ))
+
+
 });
 
 // upload a video
@@ -148,6 +271,41 @@ const updateVideo = asynHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video updated successfully."));
 });
 
+// use veryfy jwt in routes
+const togglePubStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new ApiError(400, "Video id is required.");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  if (video.owner?.toString() !== req?.user?._id?.toString()) {
+    throw new ApiError(403, "You are not authorize to change video status");
+  }
+
+  // const updateVideoStatus = await Video.findByIdAndUpdate(
+  //   videoId,
+  //   {
+  //     $set: {
+  //       isPublished: !video.isPublished,
+  //     },
+  //   },
+  //   { new: true },
+  // );
+
+  video.isPublished = !video.isPublished;
+  await video.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, video, "Video status update successfully"));
+});
 // delete a video
 const deletedVideo = asynHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -181,3 +339,12 @@ const deletedVideo = asynHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "video deleted successfully."));
 });
+
+export {
+  getAllVideo,
+  publishAVideo,
+  getVideoById,
+  updateVideo,
+  deletedVideo,
+  togglePubStatus,
+};
